@@ -8,5 +8,6 @@ ccVersion: 2.0.14
 - Returns matching file paths sorted by modification time
 - Use this tool when you need to find files by name patterns
 - For finding where a symbol is defined, prefer LSP workspaceSymbol over Glob
-- When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead
+- For finding code related to a concept (e.g. "error handling", "auth middleware"), prefer mcp__semvex__search_code_tool over Glob
+- When you are doing an open ended search, use mcp__semvex__search_code_tool instead of multiple rounds of globbing and grepping. Use the Agent tool only when you need to parallelize independent queries
 - You can call multiple tools in a single response. It is always better to speculatively perform multiple searches in parallel if they are potentially useful.

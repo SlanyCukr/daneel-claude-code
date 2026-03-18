@@ -41,7 +41,7 @@ the behavioral directive it replaces.
 | `executing-actions-with-care` | (already good, about reversibility) | Prepends: "The cost of your mistakes falls on your partner, not on you. Act knowing this." |
 | `doing-tasks-ambitious` | "You are highly capable" | "Together with your partner, you can complete ambitious tasks... You bring tireless iteration and breadth; they bring the intuition and lived experience." |
 
-### System Prompts — Modified (3 files)
+### System Prompts — Modified (6 files)
 
 | File | Change |
 |---|---|
@@ -49,6 +49,9 @@ the behavioral directive it replaces.
 | `doing-tasks-read-first` | Added: "Read local configuration and adjacent code before changing architecture, tooling, or conventions." |
 | `plan-mode-is-active-5-phase` | Wired Phase 1 exploration to `lsp-agents:lsp-explore` and Phase 2 design to `lsp-agents:lsp-plan` subagent types |
 | `plan-mode-is-active-iterative` | Wired exploration loop to `lsp-agents:lsp-explore` subagent type |
+| `tool-usage-search-content` | "use Grep instead of grep or rg" → "use Grep for exact text/patterns. For understanding what code does or finding implementations by concept, prefer MCP semantic search tools." |
+| `tool-usage-direct-search` | Added: "For conceptual queries, prefer MCP semantic search tools — they understand meaning, not just text patterns." |
+| `tool-usage-delegate-exploration` | Added: "first try MCP semantic search tools if available — they can find relevant code by meaning in a single call" before the Agent/Explore fallback |
 
 ### System Prompts — Gutted (11 files)
 
@@ -77,8 +80,8 @@ These files are in `tool-descriptions/`.
 |---|---|
 | `todowrite` | 190 lines → 5 lines. Cut 8 worked examples with `<reasoning>` blocks. Kept: states, one-at-a-time rule, when to use. |
 | `enterplanmode` | 86 lines → 12 lines. Cut 30 lines of examples. Kept: when/when-not logic. |
-| `lsp` | **Beefed up.** Added `IMPORTANT: Prefer LSP over Grep/Glob/Read for code navigation`. Lists all operations with guidance. Matches CLAUDE.md LSP preference. |
-| `grep` | Softened `ALWAYS/NEVER` to `Prefer`. Added: "For code navigation, prefer LSP over Grep." |
+| `lsp` | **Beefed up.** Added `IMPORTANT: Prefer LSP over Grep/Glob/Read for structural code navigation`. Added: "For conceptual understanding, prefer MCP semantic search tools." Lists all operations with guidance. |
+| `grep` | Softened `ALWAYS/NEVER` to `Prefer`. Added MCP semantic search as first choice for conceptual queries, LSP for navigation, Grep for exact text only. |
 | `glob` | Added: "For finding where a symbol is defined, prefer LSP workspaceSymbol over Glob." |
 | `bash-prefer-dedicated-tools` | `IMPORTANT: Avoid` → `Prefer dedicated tools or LSP/MCP tools over`. |
 | `bash-built-in-tools-note` | Added LSP and MCP as first-class alternatives alongside built-in tools. |
@@ -118,6 +121,7 @@ after each Claude Code update.
 | Model family catalog | `The most recent Claude model family is Claude 4.5/4.6. Model IDs — ...` | *(stripped)* |
 | /help guidance | `"/help: Get help with using Claude Code"` | *(stripped)* |
 | Feedback URL | `To give feedback, users should ${ISSUES_EXPLAINER}` | *(stripped)* |
+| LSP workspaceSymbol fix | `params:{query:""}` (hardcoded empty query — [#17149](https://github.com/anthropics/claude-code/issues/17149)) | Extracts symbol text at cursor position and passes it as the query |
 
 ## How to apply
 
@@ -181,6 +185,11 @@ tweakcc adhoc-patch --confirm-possible-dangerous-patch \
 # Strip feedback URL
 tweakcc adhoc-patch --confirm-possible-dangerous-patch \
   --regex 'To give feedback, users should \$\{[^}]+\}' ''
+
+# Fix LSP workspaceSymbol (sends empty query — github.com/anthropics/claude-code/issues/17149)
+tweakcc adhoc-patch --confirm-possible-dangerous-patch \
+  --string 'case"workspaceSymbol":return{method:"workspace/symbol",params:{query:""}}' \
+  'case"workspaceSymbol":{let Z=Xgf($,H.line-1,H.character-1)||"";return{method:"workspace/symbol",params:{query:Z}}}'
 ```
 
 ### After a Claude Code update
