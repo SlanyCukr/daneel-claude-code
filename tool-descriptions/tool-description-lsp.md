@@ -5,22 +5,45 @@ ccVersion: 2.0.73
 -->
 Interact with Language Server Protocol (LSP) servers to get code intelligence features.
 
-IMPORTANT: Prefer LSP over Grep/Glob/Read for structural code navigation — definitions, references, type info, call hierarchy. LSP knows what a symbol actually is, not just where a string appears. Use LSP for:
-- \`goToDefinition\` / \`goToImplementation\` to jump to source
-- \`findReferences\` to see all usages across the codebase
-- \`workspaceSymbol\` to find where something is defined
-- \`documentSymbol\` to list all symbols in a file
-- \`hover\` for type info without reading the file
-- \`incomingCalls\` / \`outgoingCalls\` for call hierarchy
-- \`prepareCallHierarchy\` to get call hierarchy item at a position
+## Core rule: Semvex discovers, LSP explains
 
-Before renaming or changing a function signature, use \`findReferences\` to find all call sites first.
+Use mcp__semvex__search_code_tool to find code by meaning. As soon as you have a file path and line number from any source (Semvex hit, Grep hit, or prior LSP result), that is your LSP anchor — use it immediately for LSP follow-up before reaching for Read.
 
-For conceptual understanding (e.g. "how does this system handle X"), prefer mcp__semvex__search_code_tool — it finds relevant code by meaning. Use LSP when you already know the symbol or file you're navigating.
+## Anchor discipline
 
-Use Grep/Glob only for text/pattern searches (string literals, config values, regex patterns) where neither LSP nor semantic search helps.
+Every LSP call needs filePath + line + character. Get anchors from:
+- Semvex results (return file path + line)
+- Grep hits
+- \`documentSymbol\` on a known file (returns all symbols with positions)
+- Prior LSP results (e.g. \`goToDefinition\` gives you a new anchor)
 
-After writing or editing code, check LSP diagnostics before moving on. Fix any type errors or missing imports immediately.
+When you have a file but no position, use \`documentSymbol\` first to map the file, then pick the symbol.
+
+## Mandatory triggers
+
+If the question is about...
+- where something is defined → \`goToDefinition\`
+- which concrete class/function runs → \`goToImplementation\`
+- where something is used → \`findReferences\`
+- how control flows → \`incomingCalls\` / \`outgoingCalls\`
+- what type/value this is → \`hover\`
+- what symbols exist in a file → \`documentSymbol\`
+- finding all symbols matching a name → \`workspaceSymbol\` (cursor must be on the symbol name text)
+
+Do not use Grep or Read to answer these if you already have an anchor.
+
+## Anti-patterns
+
+- Do not grep function/class names to find callers — use \`findReferences\` or \`incomingCalls\`.
+- Do not read entire files before trying \`documentSymbol\`.
+- Do not keep doing semantic search once you already have the relevant symbol — switch to LSP.
+- Read is for confirmation and local context, not primary navigation.
+
+## After editing code
+
+Check LSP diagnostics before moving on. Fix any type errors or missing imports immediately.
+
+## Parameters
 
 All operations require:
 - filePath: The file to operate on
