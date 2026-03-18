@@ -9,6 +9,14 @@ Interact with Language Server Protocol (LSP) servers to get code intelligence fe
 
 Use mcp__semvex__search_code_tool to find code by meaning. As soon as you have a file path and line number from any source (Semvex hit, Grep hit, or prior LSP result), that is your LSP anchor — use it immediately for LSP follow-up before reaching for Read.
 
+## LSP-first contract
+
+For symbol-centric questions (where is X defined, who calls X, what does X call, what symbols are in file Y), LSP is mandatory, not optional. Before the 2nd Read on a symbol-centric task, use at least one LSP call. Read only after LSP narrows the target.
+
+## Read budget
+
+Maximum 1 Read before the first LSP call. Maximum 3 Reads before at least 2 LSP calls. If you hit the budget, stop reading and switch to LSP.
+
 ## Anchor discipline
 
 Every LSP call needs filePath + line + character. Get anchors from:
@@ -36,7 +44,7 @@ Do not use Grep or Read to answer these if you already have an anchor.
 
 - Do not grep function/class names to find callers — use \`findReferences\` or \`incomingCalls\`.
 - Do not read entire files before trying \`documentSymbol\`.
-- Do not keep doing semantic search once you already have the relevant symbol — switch to LSP.
+- Do not chain Read after Read when \`documentSymbol\`, \`goToDefinition\`, or \`findReferences\` can narrow the search faster.
 - Read is for confirmation and local context, not primary navigation.
 
 ## After editing code
