@@ -7,11 +7,16 @@ Interact with Language Server Protocol (LSP) servers to get code intelligence fe
 
 ## Core rule: Semvex discovers, LSP explains
 
-Use mcp__semvex__search_code_tool to find code by meaning. As soon as you have a file path and line number from any source (Semvex hit, Grep hit, or prior LSP result), that is your LSP anchor — use it immediately for LSP follow-up before reaching for Read.
+Use mcp__semvex__search_code_tool to find code by meaning. As soon as you have a file path and line number from any source (Semvex hit, Grep hit, or prior LSP result), that is your LSP anchor — use it for LSP follow-up before reaching for Read.
 
-## LSP-first contract
+## Navigation chain contract
 
-For symbol-centric questions (where is X defined, who calls X, what does X call, what symbols are in file Y), LSP is mandatory, not optional. Before the 2nd Read on a symbol-centric task, use at least one LSP call. Read only after LSP narrows the target.
+\`documentSymbol\` is reconnaissance — a table of contents, not evidence. After \`documentSymbol\`, you MUST call a navigation LSP operation (\`goToDefinition\`, \`findReferences\`, \`incomingCalls\`, \`outgoingCalls\`) before Read or concluding anything about behavior. \`documentSymbol\` alone does not satisfy the LSP requirement.
+
+Forbidden sequences on code files:
+- \`documentSymbol\` → Read (must navigate first)
+- Semvex → Read (must LSP-anchor first)
+- Semvex → \`documentSymbol\` → Read (must navigate after \`documentSymbol\`)
 
 ## Read budget
 
@@ -25,27 +30,27 @@ Every LSP call needs filePath + line + character. Get anchors from:
 - \`documentSymbol\` on a known file (returns all symbols with positions)
 - Prior LSP results (e.g. \`goToDefinition\` gives you a new anchor)
 
-When you have a file but no position, use \`documentSymbol\` first to map the file, then pick the symbol.
+When you have a file but no position, use \`documentSymbol\` first to map the file, then pick the symbol. Every Semvex hit is an anchor — use it immediately.
 
-## Mandatory triggers
+## Mandatory navigation triggers
 
-If the question is about...
-- where something is defined → \`goToDefinition\`
-- which concrete class/function runs → \`goToImplementation\`
-- where something is used → \`findReferences\`
-- how control flows → \`incomingCalls\` / \`outgoingCalls\`
-- what type/value this is → \`hover\`
-- what symbols exist in a file → \`documentSymbol\`
-- finding all symbols matching a name → \`workspaceSymbol\` (cursor must be on the symbol name text)
+| Question intent | Required LSP call | Not sufficient alone |
+|---|---|---|
+| Where is this defined? | \`goToDefinition\` | \`documentSymbol\`, \`hover\` |
+| Where is this used? | \`findReferences\` | \`documentSymbol\`, \`hover\` |
+| Who calls this? | \`incomingCalls\` | \`documentSymbol\`, \`findReferences\` |
+| What does this call? | \`outgoingCalls\` | \`documentSymbol\`, \`findReferences\` |
+| What symbol is this? | \`hover\` then one of the above | \`documentSymbol\` alone |
+| All symbols matching a name | \`workspaceSymbol\` (cursor on the name) | — |
 
-Do not use Grep or Read to answer these if you already have an anchor.
+If the question is about relationships, usage, or control flow, \`documentSymbol\` is never the terminal LSP step.
 
 ## Anti-patterns
 
+- Do not use \`documentSymbol\` as proof of usage, call flow, or behavior.
 - Do not grep function/class names to find callers — use \`findReferences\` or \`incomingCalls\`.
 - Do not read entire files before trying \`documentSymbol\`.
-- Do not chain Read after Read when \`documentSymbol\`, \`goToDefinition\`, or \`findReferences\` can narrow the search faster.
-- Read is for confirmation and local context, not primary navigation.
+- Do not chain Read after Read when LSP navigation can narrow the search.
 
 ## After editing code
 
