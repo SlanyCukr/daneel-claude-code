@@ -34,21 +34,27 @@ When you have a file but no position, use \`documentSymbol\` first to map the fi
 
 ## Mandatory navigation triggers
 
-| Question intent | Required LSP call | Not sufficient alone |
+| Question intent | Required LSP call | Wrong substitute (do not use) |
 |---|---|---|
 | Where is this defined? | \`goToDefinition\` | \`documentSymbol\`, \`hover\` |
 | Where is this used? | \`findReferences\` | \`documentSymbol\`, \`hover\` |
-| Who calls this? | \`incomingCalls\` | \`documentSymbol\`, \`findReferences\` |
-| What does this call? | \`outgoingCalls\` | \`documentSymbol\`, \`findReferences\` |
+| Who calls this function/method? | \`incomingCalls\` | \`findReferences\` (returns imports, type refs, test mocks — not just callers) |
+| What does this function/method call? | \`outgoingCalls\` | Read (requires manually resolving each name in the body) |
 | What symbol is this? | \`hover\` then one of the above | \`documentSymbol\` alone |
 | All symbols matching a name | \`workspaceSymbol\` (cursor on the name) | — |
 
-If the question is about relationships, usage, or control flow, \`documentSymbol\` is never the terminal LSP step.
+\`incomingCalls\` returns ONLY actual callers. \`findReferences\` returns ALL references including imports and type annotations. For call relationships, \`incomingCalls\` is strictly more precise. \`outgoingCalls\` returns resolved call targets in a single operation.
+
+## Pre-tool checkpoint
+
+Before calling \`findReferences\` on a function/method: "Am I finding callers?" → use \`incomingCalls\` instead.
+Before calling Read to see what a function calls: → use \`outgoingCalls\` instead.
 
 ## Anti-patterns
 
 - Do not use \`documentSymbol\` as proof of usage, call flow, or behavior.
-- Do not grep function/class names to find callers — use \`findReferences\` or \`incomingCalls\`.
+- Do not use \`findReferences\` to find callers of a function — use \`incomingCalls\` (more precise, no noise from imports/types).
+- Do not Read a function body to find what it calls — use \`outgoingCalls\` (resolved targets in one call).
 - Do not read entire files before trying \`documentSymbol\`.
 - Do not chain Read after Read when LSP navigation can narrow the search.
 
